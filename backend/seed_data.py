@@ -8,23 +8,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv('DATABASE_URL', 'mysql://root:password@localhost:3306/delivery_management')
+DATABASE_URL = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:@localhost/delivery_management')
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def seed_data():
     session = SessionLocal()
-    
+
     # Clear existing data
     session.query(Order).delete()
     session.query(Agent).delete()
     session.query(Warehouse).delete()
     session.commit()
-    
+
     # Seed warehouses (10 total)
     base_lat, base_lng = 19.0760, 72.8777  # Mumbai coordinates
     warehouses = []
-    
+
     for i in range(1, 11):
         warehouse = Warehouse(
             name=f"Warehouse {i}",
@@ -34,9 +34,9 @@ def seed_data():
         )
         session.add(warehouse)
         warehouses.append(warehouse)
-    
+
     session.commit()
-    
+
     # Seed agents (20 per warehouse, 200 total)
     agent_id = 1
     for warehouse in warehouses:
@@ -52,15 +52,15 @@ def seed_data():
             )
             session.add(agent)
             agent_id += 1
-    
+
     session.commit()
-    
+
     # Seed orders (60-80 per warehouse)
     order_id = 1
     priorities = ['high', 'medium', 'low']
     areas = ['Andheri', 'Bandra', 'Juhu', 'Powai', 'Goregaon', 'Malad']
     streets = ['MG Road', 'Brigade Road', 'Commercial Street', 'Residency Road']
-    
+
     for warehouse in warehouses:
         order_count = random.randint(60, 80)
         for i in range(order_count):
@@ -75,13 +75,13 @@ def seed_data():
             )
             session.add(order)
             order_id += 1
-    
+
     session.commit()
-    
+
     print(f"Seeded {len(warehouses)} warehouses")
     print(f"Seeded {agent_id - 1} agents")
     print(f"Seeded {order_id - 1} orders")
-    
+
     session.close()
 
 if __name__ == "__main__":

@@ -27,16 +27,18 @@ const Index = () => {
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      const [agentsData, ordersData, warehousesData] = await Promise.all([
+      const [agentsData, ordersData, warehousesData, allocationsData] = await Promise.all([
         apiService.getAgents(),
         apiService.getOrders(),
         apiService.getWarehouses(),
+        apiService.getAllAllocations(),
       ]);
-      
+
       setAgents(agentsData);
       setOrders(ordersData);
       setWarehouses(warehousesData);
-      
+      setAllocations(allocationsData);
+
       toast({
         title: "Data loaded successfully",
         description: "All system data has been refreshed",
@@ -58,11 +60,11 @@ const Index = () => {
       setIsAllocating(true);
       const result = await apiService.runAllocation();
       setAllocations(result);
-      
+
       // Refresh orders to get updated statuses
       const updatedOrders = await apiService.getOrders();
       setOrders(updatedOrders);
-      
+
       toast({
         title: "Allocation completed",
         description: `${result.allocated_orders.length} orders allocated to ${result.agent_allocations.length} agents`,
@@ -94,8 +96,31 @@ const Index = () => {
   const totalAgents = agents.length;
   const totalWarehouses = warehouses.length;
   const activeAgents = agents.filter(a => a.checked_in && a.is_active).length;
-  const allocatedOrders = allocations ? allocations.allocated_orders.length : 0;
-  const postponedOrders = allocations ? allocations.postponed_orders.length : 0;
+  const groupedTodaysOrders: Record<number, ApiOrder[]> = {};
+  const now = new Date();
+  orders.forEach(order => {
+    const createdAt = new Date(order.created_at);
+    const isToday =
+      createdAt.getFullYear() === now.getFullYear() &&
+      createdAt.getMonth() === now.getMonth() &&
+      createdAt.getDate() === now.getDate();
+
+    if (isToday) {
+      const warehouseId = order.warehouse_id;
+      if (!groupedTodaysOrders[warehouseId]) {
+        groupedTodaysOrders[warehouseId] = [];
+      }
+      groupedTodaysOrders[warehouseId].push(order);
+    }
+  });
+
+  console.log("groupedTodaysOrders", groupedTodaysOrders);
+  // const allocatedOrders = allocations ? allocations.allocated_orders.length : 0;
+  const allocatedOrders = orders.filter(o => o.status === "allocated").length;
+  // const postponedOrders = allocations ? allocations.postponed_orders.length : 0;
+  const postponedOrders = orders.filter(o => o.status === "postponed").length;
+  const estCost = allocations ? allocations.total_cost : 0;
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -107,7 +132,7 @@ const Index = () => {
             <p className="text-gray-600 mt-1">Order allocation and route optimization platform</p>
           </div>
           <div className="flex gap-3">
-            <Button 
+            <Button
               onClick={loadInitialData}
               variant="outline"
               disabled={isLoading}
@@ -115,7 +140,7 @@ const Index = () => {
               <Package className="w-4 h-4 mr-2" />
               Refresh Data
             </Button>
-            <Button 
+            <Button
               onClick={handleRunAllocation}
               disabled={isAllocating || activeAgents === 0}
               size="lg"
@@ -219,7 +244,7 @@ const Index = () => {
                 <div>
                   <p className="text-sm text-gray-600">Est. Cost</p>
                   <p className="text-2xl font-bold">
-                    ₹{allocations ? allocations.total_cost.toLocaleString() : '0'}
+                    ₹{estCost ? estCost.toLocaleString() : '0'}
                   </p>
                 </div>
               </div>
@@ -248,24 +273,24 @@ const Index = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Allocation Efficiency</span>
                         <Badge variant="secondary">
-                          {((allocatedOrders / totalOrders) * 100).toFixed(1)}%
+                          {allocatedOrders && totalOrders ? ((allocatedOrders / totalOrders) * 100).toFixed(1) : 0}%
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Agents Utilized</span>
                         <Badge variant="secondary">
-                          {allocations.agent_allocations.length}/{activeAgents}
+                          {allocations?.agent_allocations?.length}/{activeAgents}
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Average Orders/Agent</span>
                         <Badge variant="secondary">
-                          {(allocatedOrders / Math.max(allocations.agent_allocations.length, 1)).toFixed(1)}
+                          {(allocatedOrders / Math.max(allocations?.agent_allocations?.length, 1)).toFixed(1)}
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Total Cost</span>
-                        <Badge variant="outline">₹{allocations.total_cost.toLocaleString()}</Badge>
+                        <Badge variant="outline">₹{allocations?.total_cost.toLocaleString()}</Badge>
                       </div>
                     </div>
                   ) : (
@@ -316,7 +341,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="warehouses">
-            <WarehouseOverview warehouses={warehouses} />
+            <WarehouseOverview warehouses={warehouses} extraData={{ totalAgents: totalAgents, groupedTodaysOrders: groupedTodaysOrders, activeAgents: activeAgents }} />
           </TabsContent>
         </Tabs>
       </div>

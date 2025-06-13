@@ -2,13 +2,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Package, Users, Building } from 'lucide-react';
-import { ApiWarehouse } from '@/services/api';
+import { ApiOrder, ApiWarehouse } from '@/services/api';
 
 interface WarehouseOverviewProps {
   warehouses: ApiWarehouse[];
+  extraData: DashboardSummary;
 }
 
-export const WarehouseOverview = ({ warehouses }: WarehouseOverviewProps) => {
+interface DashboardSummary {
+  totalAgents: number;
+  activeAgents: number;
+  groupedTodaysOrders: Record<number, ApiOrder[]>;
+}
+
+export const WarehouseOverview = ({ warehouses, extraData }: WarehouseOverviewProps) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -30,30 +37,30 @@ export const WarehouseOverview = ({ warehouses }: WarehouseOverviewProps) => {
                   </span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Capacity</span>
                 <Badge variant="outline">
                   {warehouse.capacity} orders/day
                 </Badge>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Active Agents</span>
                 <div className="flex items-center gap-1">
                   <Users className="w-4 h-4 text-gray-400" />
-                  <span className="font-semibold">~20</span>
+                  <span className="font-semibold">{extraData.activeAgents}</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Today's Orders</span>
                 <div className="flex items-center gap-1">
                   <Package className="w-4 h-4 text-gray-400" />
-                  <span className="font-semibold">~60</span>
+                  <span className="font-semibold">{extraData?.groupedTodaysOrders[warehouse.id]?.length || 0}</span>
                 </div>
               </div>
-              
+
               <div className="pt-2 border-t">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Status</span>
@@ -66,7 +73,7 @@ export const WarehouseOverview = ({ warehouses }: WarehouseOverviewProps) => {
           </Card>
         ))}
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Warehouse Network Overview</CardTitle>
@@ -78,7 +85,7 @@ export const WarehouseOverview = ({ warehouses }: WarehouseOverviewProps) => {
               <p className="text-sm text-gray-600">Total Warehouses</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">~200</p>
+              <p className="text-2xl font-bold text-green-600">{extraData.totalAgents}</p>
               <p className="text-sm text-gray-600">Total Agents</p>
             </div>
             <div className="text-center">

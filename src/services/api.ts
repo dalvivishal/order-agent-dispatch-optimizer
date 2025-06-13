@@ -20,6 +20,7 @@ export interface ApiOrder {
   priority: 'high' | 'medium' | 'low';
   estimated_time: number;
   status: 'pending' | 'allocated' | 'dispatched' | 'delivered' | 'postponed';
+  created_at: string;
 }
 
 export interface ApiWarehouse {
@@ -80,6 +81,12 @@ class ApiService {
   async runAllocation(): Promise<ApiAllocationResult> {
     return this.request<ApiAllocationResult>('/allocations/run', {
       method: 'POST',
+    });
+  }
+
+  async getAllAllocations(): Promise<ApiAllocationResult> {
+    return this.request<ApiAllocationResult>('/allocations/all', {
+      method: 'GET',
     });
   }
 }
