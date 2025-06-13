@@ -108,37 +108,22 @@ npm run dev
 
 ```bash
 # Create virtual environment
+cd backend
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install -r backend/requirements.txt
+pip install -r requirements.txt
 
 # Set up environment variables
-cp backend/.env.example backend/.env
+cp .env.example .env
 # Edit .env with your database credentials
 
 # Run database migrations
-python backend/migrate.py
+python seed_data.py
 
 # Start the server
-python backend/app.py
-```
-
-### Database Setup
-
-```bash
-# Connect to MySQL
-mysql -u root -p
-
-# Create database
-CREATE DATABASE delivery_management;
-
-# Import schema
-mysql -u root -p delivery_management < backend/schema.sql
-
-# Seed sample data
-python backend/seed_data.py
+python app.py
 ```
 
 ## 🔧 Configuration
@@ -148,7 +133,7 @@ python backend/seed_data.py
 Create a `.env` file in the backend directory:
 
 ```env
-DATABASE_URL=mysql://username:password@localhost:3306/delivery_management
+DATABASE_URL='mysql+mysqlconnector://root:@localhost/delivery_management'
 JWT_SECRET=your-secret-key
 API_PORT=8000
 DEBUG=True
@@ -156,7 +141,7 @@ DEBUG=True
 
 ### Frontend Configuration
 
-Update `src/config/api.ts`:
+Update `src/services/api.ts`:
 
 ```typescript
 export const API_BASE_URL = 'http://localhost:8000/api';
@@ -233,9 +218,6 @@ docker-compose up --build
 # Run frontend tests
 npm test
 
-# Run backend tests
-python -m pytest backend/tests/
-
 # Run integration tests
 npm run test:integration
 ```
@@ -244,11 +226,11 @@ npm run test:integration
 
 ### Endpoints
 
-- `GET /api/allocations/run` - Execute daily allocation
+- `POST /api/allocations/run` - Execute daily allocation
 - `GET /api/agents` - List all agents
 - `GET /api/orders` - List all orders
 - `GET /api/warehouses` - List all warehouses
-- `POST /api/agents/{id}/checkin` - Agent check-in
+- `GET /api/allocations/all` - Get all allocations
 
 ## 🤝 Contributing
 
