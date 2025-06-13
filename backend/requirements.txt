@@ -1,0 +1,9 @@
+
+falcon==3.1.1
+falcon-cors==1.1.8
+sqlalchemy==2.0.23
+mysql-connector-python==8.2.0
+python-dotenv==1.0.0
+gunicorn==21.2.0
+pytest==7.4.3
+faker==19.13.0
