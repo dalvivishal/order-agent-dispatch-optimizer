@@ -4,33 +4,98 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Users, Package, Clock, DollarSign, Truck } from 'lucide-react';
-import { AllocationEngine } from '@/components/AllocationEngine';
+import { MapPin, Users, Package, Clock, DollarSign, Truck, AlertCircle } from 'lucide-react';
 import { WarehouseOverview } from '@/components/WarehouseOverview';
 import { AgentMetrics } from '@/components/AgentMetrics';
 import { OrdersTable } from '@/components/OrdersTable';
-import { mockData } from '@/utils/mockData';
+import { apiService, ApiAgent, ApiOrder, ApiWarehouse, ApiAllocationResult } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
-  const [allocations, setAllocations] = useState(null);
+  const [agents, setAgents] = useState<ApiAgent[]>([]);
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [warehouses, setWarehouses] = useState<ApiWarehouse[]>([]);
+  const [allocations, setAllocations] = useState<ApiAllocationResult | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAllocating, setIsAllocating] = useState(false);
-  const [selectedWarehouse, setSelectedWarehouse] = useState(1);
+  const { toast } = useToast();
 
-  const handleRunAllocation = async () => {
-    setIsAllocating(true);
-    // Simulate allocation processing
-    setTimeout(() => {
-      const result = AllocationEngine.allocateOrders(mockData);
-      setAllocations(result);
-      setIsAllocating(false);
-    }, 2000);
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setIsLoading(true);
+      const [agentsData, ordersData, warehousesData] = await Promise.all([
+        apiService.getAgents(),
+        apiService.getOrders(),
+        apiService.getWarehouses(),
+      ]);
+      
+      setAgents(agentsData);
+      setOrders(ordersData);
+      setWarehouses(warehousesData);
+      
+      toast({
+        title: "Data loaded successfully",
+        description: "All system data has been refreshed",
+      });
+    } catch (error) {
+      console.error('Failed to load initial data:', error);
+      toast({
+        title: "Error loading data",
+        description: "Failed to connect to the backend. Please check if the server is running.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const totalOrders = mockData.orders.length;
-  const totalAgents = mockData.agents.length;
-  const totalWarehouses = mockData.warehouses.length;
-  const allocatedOrders = allocations ? allocations.allocatedOrders.length : 0;
-  const postponedOrders = allocations ? allocations.postponedOrders.length : 0;
+  const handleRunAllocation = async () => {
+    try {
+      setIsAllocating(true);
+      const result = await apiService.runAllocation();
+      setAllocations(result);
+      
+      // Refresh orders to get updated statuses
+      const updatedOrders = await apiService.getOrders();
+      setOrders(updatedOrders);
+      
+      toast({
+        title: "Allocation completed",
+        description: `${result.allocated_orders.length} orders allocated to ${result.agent_allocations.length} agents`,
+      });
+    } catch (error) {
+      console.error('Allocation failed:', error);
+      toast({
+        title: "Allocation failed",
+        description: "Failed to run allocation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAllocating(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Clock className="w-12 h-12 mx-auto mb-4 animate-spin text-blue-600" />
+          <p className="text-gray-600">Loading system data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalOrders = orders.length;
+  const totalAgents = agents.length;
+  const totalWarehouses = warehouses.length;
+  const activeAgents = agents.filter(a => a.checked_in && a.is_active).length;
+  const allocatedOrders = allocations ? allocations.allocated_orders.length : 0;
+  const postponedOrders = allocations ? allocations.postponed_orders.length : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -41,25 +106,49 @@ const Index = () => {
             <h1 className="text-3xl font-bold text-gray-900">Delivery Management System</h1>
             <p className="text-gray-600 mt-1">Order allocation and route optimization platform</p>
           </div>
-          <Button 
-            onClick={handleRunAllocation}
-            disabled={isAllocating}
-            size="lg"
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isAllocating ? (
-              <>
-                <Clock className="w-4 h-4 mr-2 animate-spin" />
-                Allocating...
-              </>
-            ) : (
-              <>
-                <Truck className="w-4 h-4 mr-2" />
-                Run Daily Allocation
-              </>
-            )}
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={loadInitialData}
+              variant="outline"
+              disabled={isLoading}
+            >
+              <Package className="w-4 h-4 mr-2" />
+              Refresh Data
+            </Button>
+            <Button 
+              onClick={handleRunAllocation}
+              disabled={isAllocating || activeAgents === 0}
+              size="lg"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isAllocating ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Allocating...
+                </>
+              ) : (
+                <>
+                  <Truck className="w-4 h-4 mr-2" />
+                  Run Daily Allocation
+                </>
+              )}
+            </Button>
+          </div>
         </div>
+
+        {/* Connection Status */}
+        {activeAgents === 0 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-orange-600" />
+                <span className="text-orange-800">
+                  No agents are checked in. Allocation cannot be performed.
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -81,7 +170,7 @@ const Index = () => {
                 <Users className="w-5 h-5 text-green-600" />
                 <div>
                   <p className="text-sm text-gray-600">Active Agents</p>
-                  <p className="text-2xl font-bold">{totalAgents}</p>
+                  <p className="text-2xl font-bold">{activeAgents}/{totalAgents}</p>
                 </div>
               </div>
             </CardContent>
@@ -130,7 +219,7 @@ const Index = () => {
                 <div>
                   <p className="text-sm text-gray-600">Est. Cost</p>
                   <p className="text-2xl font-bold">
-                    ₹{allocations ? allocations.totalCost.toLocaleString() : '0'}
+                    ₹{allocations ? allocations.total_cost.toLocaleString() : '0'}
                   </p>
                 </div>
               </div>
@@ -165,18 +254,18 @@ const Index = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Agents Utilized</span>
                         <Badge variant="secondary">
-                          {allocations.agentAllocations.length}/{totalAgents}
+                          {allocations.agent_allocations.length}/{activeAgents}
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Average Orders/Agent</span>
                         <Badge variant="secondary">
-                          {(allocatedOrders / Math.max(allocations.agentAllocations.length, 1)).toFixed(1)}
+                          {(allocatedOrders / Math.max(allocations.agent_allocations.length, 1)).toFixed(1)}
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Total Cost</span>
-                        <Badge variant="outline">₹{allocations.totalCost.toLocaleString()}</Badge>
+                        <Badge variant="outline">₹{allocations.total_cost.toLocaleString()}</Badge>
                       </div>
                     </div>
                   ) : (
@@ -219,15 +308,15 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="agents">
-            <AgentMetrics agents={mockData.agents} allocations={allocations} />
+            <AgentMetrics agents={agents} allocations={allocations} />
           </TabsContent>
 
           <TabsContent value="orders">
-            <OrdersTable orders={mockData.orders} allocations={allocations} />
+            <OrdersTable orders={orders} allocations={allocations} />
           </TabsContent>
 
           <TabsContent value="warehouses">
-            <WarehouseOverview warehouses={mockData.warehouses} />
+            <WarehouseOverview warehouses={warehouses} />
           </TabsContent>
         </Tabs>
       </div>

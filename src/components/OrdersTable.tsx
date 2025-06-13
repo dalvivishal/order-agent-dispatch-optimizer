@@ -3,27 +3,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Package, MapPin, Clock, User } from 'lucide-react';
-import { Order, AllocationResult } from '@/components/AllocationEngine';
+import { ApiOrder, ApiAllocationResult } from '@/services/api';
 
 interface OrdersTableProps {
-  orders: Order[];
-  allocations: AllocationResult | null;
+  orders: ApiOrder[];
+  allocations: ApiAllocationResult | null;
 }
 
 export const OrdersTable = ({ orders, allocations }: OrdersTableProps) => {
   const getOrderStatus = (orderId: number) => {
     if (!allocations) return 'pending';
-    if (allocations.allocatedOrders.includes(orderId)) return 'allocated';
-    if (allocations.postponedOrders.includes(orderId)) return 'postponed';
+    if (allocations.allocated_orders.includes(orderId)) return 'allocated';
+    if (allocations.postponed_orders.includes(orderId)) return 'postponed';
     return 'pending';
   };
 
   const getAssignedAgent = (orderId: number) => {
     if (!allocations) return null;
-    const agentAllocation = allocations.agentAllocations.find(
+    const agentAllocation = allocations.agent_allocations.find(
       a => a.orders.includes(orderId)
     );
-    return agentAllocation ? agentAllocation.agentId : null;
+    return agentAllocation ? agentAllocation.agent_id : null;
   };
 
   const getPriorityColor = (priority: string) => {
@@ -49,7 +49,7 @@ export const OrdersTable = ({ orders, allocations }: OrdersTableProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Package className="w-5 h-5" />
-          Orders Management
+          Orders Management ({orders.length} orders)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -78,7 +78,7 @@ export const OrdersTable = ({ orders, allocations }: OrdersTableProps) => {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <MapPin className="w-4 h-4 text-gray-400" />
-                      Warehouse {order.warehouseId}
+                      Warehouse {order.warehouse_id}
                     </div>
                   </TableCell>
                   <TableCell className="max-w-xs truncate">
@@ -92,7 +92,7 @@ export const OrdersTable = ({ orders, allocations }: OrdersTableProps) => {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4 text-gray-400" />
-                      {order.estimatedTime} min
+                      {order.estimated_time} min
                     </div>
                   </TableCell>
                   <TableCell>

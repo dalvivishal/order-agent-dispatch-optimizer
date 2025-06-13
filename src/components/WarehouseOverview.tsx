@@ -2,10 +2,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Package, Users, Building } from 'lucide-react';
-import { Warehouse } from '@/components/AllocationEngine';
+import { ApiWarehouse } from '@/services/api';
 
 interface WarehouseOverviewProps {
-  warehouses: Warehouse[];
+  warehouses: ApiWarehouse[];
 }
 
 export const WarehouseOverview = ({ warehouses }: WarehouseOverviewProps) => {
@@ -26,7 +26,7 @@ export const WarehouseOverview = ({ warehouses }: WarehouseOverviewProps) => {
                 <div className="flex items-center gap-1">
                   <MapPin className="w-4 h-4 text-gray-400" />
                   <span className="text-sm font-mono">
-                    {warehouse.location.lat.toFixed(4)}, {warehouse.location.lng.toFixed(4)}
+                    {warehouse.latitude.toFixed(4)}, {warehouse.longitude.toFixed(4)}
                   </span>
                 </div>
               </div>
@@ -42,7 +42,7 @@ export const WarehouseOverview = ({ warehouses }: WarehouseOverviewProps) => {
                 <span className="text-sm text-gray-600">Active Agents</span>
                 <div className="flex items-center gap-1">
                   <Users className="w-4 h-4 text-gray-400" />
-                  <span className="font-semibold">20</span>
+                  <span className="font-semibold">~20</span>
                 </div>
               </div>
               
@@ -78,11 +78,13 @@ export const WarehouseOverview = ({ warehouses }: WarehouseOverviewProps) => {
               <p className="text-sm text-gray-600">Total Warehouses</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">200</p>
+              <p className="text-2xl font-bold text-green-600">~200</p>
               <p className="text-sm text-gray-600">Total Agents</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">600</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {warehouses.reduce((total, w) => total + w.capacity, 0)}
+              </p>
               <p className="text-sm text-gray-600">Daily Capacity</p>
             </div>
             <div className="text-center">

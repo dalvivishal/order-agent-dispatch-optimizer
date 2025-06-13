@@ -3,21 +3,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User, MapPin, Clock, DollarSign } from 'lucide-react';
-import { Agent, AllocationResult } from '@/components/AllocationEngine';
+import { ApiAgent, ApiAllocationResult } from '@/services/api';
 
 interface AgentMetricsProps {
-  agents: Agent[];
-  allocations: AllocationResult | null;
+  agents: ApiAgent[];
+  allocations: ApiAllocationResult | null;
 }
 
 export const AgentMetrics = ({ agents, allocations }: AgentMetricsProps) => {
   const getAgentAllocation = (agentId: number) => {
-    return allocations?.agentAllocations.find(a => a.agentId === agentId);
+    return allocations?.agent_allocations.find(a => a.agent_id === agentId);
   };
 
   const getWarehouseName = (warehouseId: number) => {
     return `Warehouse ${warehouseId}`;
   };
+
+  const activeAgents = agents.filter(a => a.checked_in && a.is_active);
 
   return (
     <div className="space-y-6">
@@ -44,7 +46,7 @@ export const AgentMetrics = ({ agents, allocations }: AgentMetricsProps) => {
             <TableBody>
               {agents.map(agent => {
                 const allocation = getAgentAllocation(agent.id);
-                const workingHours = allocation ? (allocation.totalTime / 60).toFixed(1) : '0';
+                const workingHours = allocation ? (allocation.total_time / 60).toFixed(1) : '0';
                 
                 return (
                   <TableRow key={agent.id}>
@@ -59,15 +61,15 @@ export const AgentMetrics = ({ agents, allocations }: AgentMetricsProps) => {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4 text-gray-400" />
-                        {getWarehouseName(agent.warehouseId)}
+                        {getWarehouseName(agent.warehouse_id)}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge 
-                        variant={agent.checkedIn ? "default" : "secondary"}
-                        className={agent.checkedIn ? "bg-green-100 text-green-800" : ""}
+                        variant={agent.checked_in && agent.is_active ? "default" : "secondary"}
+                        className={agent.checked_in && agent.is_active ? "bg-green-100 text-green-800" : ""}
                       >
-                        {agent.checkedIn ? "Checked In" : "Not Available"}
+                        {agent.checked_in && agent.is_active ? "Available" : "Not Available"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -79,7 +81,7 @@ export const AgentMetrics = ({ agents, allocations }: AgentMetricsProps) => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <span>{allocation ? allocation.totalDistance.toFixed(1) : '0.0'}</span>
+                        <span>{allocation ? allocation.total_distance.toFixed(1) : '0.0'}</span>
                         <span className="text-sm text-gray-500">km</span>
                       </div>
                     </TableCell>
@@ -98,7 +100,7 @@ export const AgentMetrics = ({ agents, allocations }: AgentMetricsProps) => {
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4 text-gray-400" />
                         <span className="font-medium">
-                          ₹{allocation ? allocation.estimatedPay : 500}
+                          ₹{allocation ? allocation.estimated_pay : 500}
                         </span>
                       </div>
                     </TableCell>
@@ -117,7 +119,7 @@ export const AgentMetrics = ({ agents, allocations }: AgentMetricsProps) => {
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-900">Active Agents</h3>
               <p className="text-3xl font-bold text-blue-600">
-                {agents.filter(a => a.checkedIn).length}
+                {activeAgents.length}
               </p>
               <p className="text-sm text-gray-500">
                 out of {agents.length} total
@@ -132,7 +134,7 @@ export const AgentMetrics = ({ agents, allocations }: AgentMetricsProps) => {
               <h3 className="text-lg font-semibold text-gray-900">Avg Orders/Agent</h3>
               <p className="text-3xl font-bold text-green-600">
                 {allocations ? (
-                  (allocations.allocatedOrders.length / Math.max(allocations.agentAllocations.length, 1)).toFixed(1)
+                  (allocations.allocated_orders.length / Math.max(allocations.agent_allocations.length, 1)).toFixed(1)
                 ) : '0'}
               </p>
               <p className="text-sm text-gray-500">orders per active agent</p>
@@ -145,7 +147,7 @@ export const AgentMetrics = ({ agents, allocations }: AgentMetricsProps) => {
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-900">Total Cost</h3>
               <p className="text-3xl font-bold text-purple-600">
-                ₹{allocations ? allocations.totalCost.toLocaleString() : '0'}
+                ₹{allocations ? allocations.total_cost.toLocaleString() : '0'}
               </p>
               <p className="text-sm text-gray-500">estimated daily cost</p>
             </div>
