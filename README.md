@@ -95,7 +95,7 @@ CREATE TABLE allocations (
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd delivery-management-system
+cd order-agent-dispatch-optimizer
 
 # Install dependencies
 npm install
