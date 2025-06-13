@@ -197,6 +197,14 @@ gunicorn --bind 0.0.0.0:8000 app:app
 docker-compose up --build
 ```
 
+### Demo Screenshots
+![Screenshot (117)](https://github.com/user-attachments/assets/08ec3896-ab51-464d-b909-96e7e01a94b4)
+![Screenshot (118)](https://github.com/user-attachments/assets/2ecb4ec8-fc8c-4340-91b9-1e96f2ffab19)
+![Screenshot (119)](https://github.com/user-attachments/assets/aa07cafc-d20a-4613-9331-42cd8f7a05c7)
+![Screenshot (120)](https://github.com/user-attachments/assets/07f10fa8-a797-4984-9c0d-a9f691b2c1bf)
+![Screenshot (121)](https://github.com/user-attachments/assets/bd698f44-38a1-4c2a-8c99-13dc96a857ea)
+
+
 ### Technology Stack Rationale
 
 1. **React + TypeScript**: Type safety, component reusability, excellent ecosystem
